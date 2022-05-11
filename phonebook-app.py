@@ -6,23 +6,24 @@ from flaskext.mysql import MySQL
 app = Flask(__name__)
 
 # This "/home/ec2-user/dbserver.endpoint" file has to be created from cloudformation template and it has RDS endpoint
-db_endpoint = open("/home/ec2-user/dbserver.endpoint", 'r', encoding='UTF-8') 
+db_endpoint = open("/home/ec2-user/dbserver.endpoint", 'r', encoding='UTF-8')
 
 # Configure mysql database
 
 app.config['MYSQL_DATABASE_HOST'] = db_endpoint.readline().strip()
 app.config['MYSQL_DATABASE_USER'] = 'admin'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'Please_Enter_Your_DB_Password'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'Pl123456pl'
 app.config['MYSQL_DATABASE_DB'] = 'clarusway_phonebook'
 app.config['MYSQL_DATABASE_PORT'] = 3306
 db_endpoint.close()
 mysql = MySQL()
-mysql.init_app(app) 
+mysql.init_app(app)
 connection = mysql.connect()
 connection.autocommit(True)
 cursor = connection.cursor()
 
 # Write a function named `init_todo_db` create phonebook table within clarusway_phonebook db, if it doesn't exist
+
 
 def init_phonebook_db():
     phonebook_table = """
@@ -33,21 +34,24 @@ def init_phonebook_db():
     PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     """
-    cursor.execute(phonebook_table) # This is the connection to our database.
+    cursor.execute(phonebook_table)  #  This is the connection to our database.
 
-# Write a function named `find_persons` which finds persons' record using the keyword from the phonebook table in the db,and returns result as list of dictionary 
+# Write a function named `find_persons` which finds persons' record using the keyword from the phonebook table in the db,and returns result as list of dictionary
 # `[{'id': 1, 'name':'XXXX', 'number': 'XXXXXX'}]`.
 
 # This function is to find my results that has "keyword" into database
+
+
 def find_persons(keyword):
     query = f"""
     SELECT * FROM phonebook WHERE name like '%{keyword.strip().lower()}%';
     """
     cursor.execute(query)
-    result = cursor.fetchall() 
-    persons =[{'id':row[0], 'name':row[1].strip().title(), 'number':row[2]} for row in result] 
-    if len(persons) == 0: 
-        persons = [{'name':'No Result', 'number':'No Result'}] 
+    result = cursor.fetchall()
+    persons = [{'id': row[0], 'name':row[1].strip().title(), 'number':row[2]}
+               for row in result]
+    if len(persons) == 0:
+        persons = [{'name': 'No Result', 'number': 'No Result'}]
     return persons
 
 
@@ -60,7 +64,7 @@ def insert_person(name, number):
     """
     cursor.execute(query)
     row = cursor.fetchone()
-    if row is not None: 
+    if row is not None:
         return f'Person with name {row[1].title()} already exits.'
     insert = f"""
     INSERT INTO phonebook (name, number)
@@ -68,17 +72,20 @@ def insert_person(name, number):
     """
     cursor.execute(insert)
     result = cursor.fetchall()
-    return f'Person {name.strip().title()} added to Phonebook successfully' # person given by user added to phonebook 
+    # person given by user added to phonebook
+    return f'Person {name.strip().title()} added to Phonebook successfully'
 
 # Write a function named `update_person` which updates the person's record in the phonebook table,
 # and returns text info about result of the operation
+
+
 def update_person(name, number):
     query = f"""
     SELECT * FROM phonebook WHERE name like '{name.strip().lower()}';
     """
     cursor.execute(query)
     row = cursor.fetchone()
-    if row is None: 
+    if row is None:
         return f'Person with name {name.strip().title()} does not exist.'
     update = f"""
     UPDATE phonebook
@@ -104,17 +111,19 @@ def delete_person(name):
     DELETE FROM phonebook
     WHERE id= {row[0]};
     """
-    cursor.execute(delete) 
+    cursor.execute(delete)
     return f'Phone record of {name.strip().title()} is deleted from the phonebook successfully'
 
 # Write a function named `find_records` which finds phone records by keyword using `GET` and `POST` methods,
 # using template files named `index.html` given under `templates` folder
 # and assign to the static route of ('/')
+
+
 @app.route('/', methods=['GET', 'POST'])
 def find_records():
     if request.method == 'POST':
         keyword = request.form['username']
-        persons_app = find_persons(keyword) 
+        persons_app = find_persons(keyword)
         return render_template('index.html', persons_html=persons_app, keyword=keyword, show_result=True, developer_name='Serdar')
     else:
         return render_template('index.html', show_result=False, developer_name='Serdar')
@@ -129,21 +138,23 @@ def add_record():
         name = request.form['username']
         if name is None or name.strip() == "":
             return render_template('add-update.html', not_valid=True, message='Invalid input: Name can not be empty', show_result=False, action_name='save', developer_name='Serdar')
-        elif name.isdecimal(): 
+        elif name.isdecimal():
             return render_template('add-update.html', not_valid=True, message='Invalid input: Name of person should be text', show_result=False, action_name='save', developer_name='Serdar')
         phone_number = request.form['phonenumber']
-        if phone_number is None or phone_number.strip() == "": 
+        if phone_number is None or phone_number.strip() == "":
             return render_template('add-update.html', not_valid=True, message='Invalid input: Phone number can not be empty', show_result=False, action_name='save', developer_name='Serdar')
-        elif not phone_number.isdecimal(): 
+        elif not phone_number.isdecimal():
             return render_template('add-update.html', not_valid=True, message='Invalid input: Phone number should be in numeric format', show_result=False, action_name='save', developer_name='Serdar')
         result_app = insert_person(name, phone_number)
-        return render_template('add-update.html', show_result=True, result_html=result_app, not_valid=False, action_name='save', developer_name='Serdar') 
+        return render_template('add-update.html', show_result=True, result_html=result_app, not_valid=False, action_name='save', developer_name='Serdar')
     else:
         return render_template('add-update.html', show_result=False, not_valid=False, action_name='save', developer_name='Serdar')
 
 # Write a function named `update_record` which updates the record in the db using `GET` and `POST` methods,
 # using template files named `add-update.html` given under `templates` folder
 # and assign to the static route of ('update')
+
+
 @app.route('/update', methods=['GET', 'POST'])
 def update_record():
     if request.method == 'POST':
@@ -156,14 +167,16 @@ def update_record():
         elif not phone_number.isdecimal():
             return render_template('add-update.html', not_valid=True, message='Invalid input: Phone number should be in numeric format', show_result=False, action_name='update', developer_name='Serdar')
 
-        result_app = update_person(name, phone_number) 
-        return render_template('add-update.html', show_result=True, result_html=result_app, not_valid=False, action_name='update', developer_name='Serdar') 
+        result_app = update_person(name, phone_number)
+        return render_template('add-update.html', show_result=True, result_html=result_app, not_valid=False, action_name='update', developer_name='Serdar')
     else:
         return render_template('add-update.html', show_result=False, not_valid=False, action_name='update', developer_name='Serdar')
 
 # Write a function named `delete_record` which updates the record in the db using `GET` and `POST` methods,
 # using template files named `delete.html` given under `templates` folder
 # and assign to the static route of ('delete')
+
+
 @app.route('/delete', methods=['GET', 'POST'])
 def delete_record():
     if request.method == 'POST':
@@ -171,13 +184,13 @@ def delete_record():
         if name is None or name.strip() == "":
             return render_template('delete.html', not_valid=True, message='Invalid input: Name can not be empty', show_result=False, developer_name='Serdar')
         result_app = delete_person(name)
-        return render_template('delete.html', show_result=True, result_html=result_app, not_valid=False, developer_name='Serdar') 
+        return render_template('delete.html', show_result=True, result_html=result_app, not_valid=False, developer_name='Serdar')
     else:
         return render_template('delete.html', show_result=False, not_valid=False, developer_name='Serdar')
 
 
 # Add a statement to run the Flask application which can be reached from any host on port 80.
-if __name__== '__main__':
+if __name__ == '__main__':
     init_phonebook_db()
     # app.run(debug=True)
-    app.run(host='0.0.0.0', port=80) 
+    app.run(host='0.0.0.0', port=80)

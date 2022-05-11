@@ -31,14 +31,14 @@ Resources:
     Properties:
       GroupDescription: Enable HTTP for Flask Web Server and SSH for getting into EC2
       SecurityGroupIngress:
-         - IpProtocol: tcp
-           FromPort: 22
-           ToPort: 22
-           CidrIp: 0.0.0.0/0
-         - IpProtocol: tcp
-           FromPort: 80
-           ToPort: 80
-           SourceSecurityGroupId: !GetAtt ALBSecurityGroup.GroupId
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !GetAtt ALBSecurityGroup.GroupId
       VpcId: !Ref MyVPC
 
   WebServerLT:
@@ -52,28 +52,27 @@ Resources:
           - !GetAtt WebServerSecurityGroup.GroupId
         TagSpecifications:
           - ResourceType: instance
-            Tags: 
+            Tags:
               - Key: Name
                 Value: !Sub Web Server of ${AWS::StackName}
 
-        UserData: 
-          Fn::Base64:
-            !Sub
-              - |
-                #! /bin/bash
-                yum update -y
-                yum install python3 -y
-                pip3 install flask
-                pip3 install flask_mysql
-                echo "${MyDBURI}" > /home/ec2-user/dbserver.endpoint
-                TOKEN="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"
-                FOLDER="https://$TOKEN@raw.githubusercontent.com/serdarcw/phonebook-project/master"
-                curl -s --create-dirs -o "/home/ec2-user/templates/index.html" -L "$FOLDER"/templates/index.html
-                curl -s --create-dirs -o "/home/ec2-user/templates/add-update.html" -L "$FOLDER"/templates/add-update.html
-                curl -s --create-dirs -o "/home/ec2-user/templates/delete.html" -L "$FOLDER"/templates/delete.html
-                curl -s --create-dirs -o "/home/ec2-user/app.py" -L "$FOLDER"/phonebook-app.py
-                python3 /home/ec2-user/app.py
-              - MyDBURI: !GetAtt MyDatabaseServer.Endpoint.Address
+        UserData:
+          Fn::Base64: !Sub
+            - |
+              #! /bin/bash
+              yum update -y
+              yum install python3 -y
+              pip3 install flask
+              pip3 install flask_mysql
+              echo "${MyDBURI}" > /home/ec2-user/dbserver.endpoint
+              TOKEN="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"
+              FOLDER="https://$TOKEN@raw.githubusercontent.com/serdarcw/phonebook-project/master"
+              curl -s --create-dirs -o "/home/ec2-user/templates/index.html" -L "$FOLDER"/templates/index.html
+              curl -s --create-dirs -o "/home/ec2-user/templates/add-update.html" -L "$FOLDER"/templates/add-update.html
+              curl -s --create-dirs -o "/home/ec2-user/templates/delete.html" -L "$FOLDER"/templates/delete.html
+              curl -s --create-dirs -o "/home/ec2-user/app.py" -L "$FOLDER"/phonebook-app.py
+              python3 /home/ec2-user/app.py
+            - MyDBURI: !GetAtt MyDatabaseServer.Endpoint.Address
 
   WebServerTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -83,7 +82,7 @@ Resources:
       TargetType: instance
       UnhealthyThresholdCount: 3
       VpcId: !Ref MyVPC
-  
+
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -107,8 +106,7 @@ Resources:
   WebServerASG:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
-      AvailabilityZones:
-        !GetAZs ""
+      AvailabilityZones: !GetAZs ""
       DesiredCapacity: 2
       HealthCheckGracePeriod: 300
       HealthCheckType: ELB
@@ -119,7 +117,6 @@ Resources:
       MinSize: 1 #required
       TargetGroupARNs:
         - !Ref WebServerTG
-
 
   MyDBSecurityGroup:
     Type: AWS::RDS::DBSecurityGroup
@@ -144,7 +141,7 @@ Resources:
         - !Ref MyDBSecurityGroup
       Engine: mysql
       EngineVersion: 8.0.19
-      MasterUserPassword: Serdar_1
+      MasterUserPassword: Pl123456pl
       MasterUsername: admin
       MaxAllocatedStorage: 40
       Port: 3306
@@ -152,7 +149,7 @@ Resources:
 
 Outputs:
   WebsiteURL:
-    Value: !Sub 
+    Value: !Sub
       - http://${ALBAddress}
       - ALBAddress: !GetAtt ApplicationLoadBalancer.DNSName
     Description: Phonebook Application Load Balancer URL
